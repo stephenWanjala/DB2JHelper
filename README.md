@@ -33,6 +33,9 @@ DB2JHelper is a developer-friendly Java library designed to streamline DB2 datab
 ✅ Lightweight - Minimal dependencies (JDBC driver + optional HikariCP)
 #### Quick Start
 > Maven Deps Coming Soon ---
+
+[![](https://jitpack.io/v/stephenWanjala/DB2JHelper.svg)](https://jitpack.io/#stephenWanjala/DB2JHelper)
+
 ### Basic Usage:
 ````java
 
