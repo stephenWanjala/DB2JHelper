@@ -56,7 +56,7 @@ List<Map<String, Object>> results = client
 
 ### Query with fluent API
 ````java
-try (DB2Client client = new DB2Client(config)) {
+try (DB2Client client = new DB2Client(datasource)) {
 List<Employee> employees = client
         .select("id", "name", "salary")
         .from("employees")

@@ -15,7 +15,7 @@ import java.util.Objects;
  * Core executor handling SQL operations with JDBC. Manages connections,
  * statement preparation, and result set processing.
  */
-public final class QueryExecutor {
+ public final class QueryExecutor {
     private final DataSource dataSource;
 
     /**

@@ -1,8 +1,5 @@
 package io.github.stephenWanjala.db2.core;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-import io.github.stephenWanjala.db2.config.DataSourceConfig;
 import io.github.stephenWanjala.db2.core.executor.QueryExecutor;
 import io.github.stephenWanjala.db2.exception.DataAccessException;
 import io.github.stephenWanjala.db2.support.RowMapper;
@@ -25,10 +22,10 @@ public final class DB2Client implements AutoCloseable {
     private final DataSource dataSource;
     private final boolean isPooledDataSource;
 
-    public DB2Client(DataSourceConfig config) {
-        this.dataSource = createDataSource(config);
+    public DB2Client(DataSource dataSource) {
+        this.dataSource = dataSource;
         this.executor = new QueryExecutor(dataSource);
-        this.isPooledDataSource = config.getDataSource() != null;
+        this.isPooledDataSource = dataSource != null;
     }
 
     // Core Operations
@@ -102,6 +99,7 @@ public final class DB2Client implements AutoCloseable {
         }
     }
 
+   /*
     private DataSource createDataSource(DataSourceConfig config) {
         if (config.getDataSource() != null) {
             return config.getDataSource();
@@ -119,6 +117,7 @@ public final class DB2Client implements AutoCloseable {
 
         return new HikariDataSource(hikariConfig);
     }
+    */
 
     public enum IsolationLevel {
         READ_UNCOMMITTED(Connection.TRANSACTION_READ_UNCOMMITTED),
