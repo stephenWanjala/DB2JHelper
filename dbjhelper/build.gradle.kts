@@ -6,7 +6,7 @@ java{
 plugins {
 //    `java-library`
     id("java")
-    `maven-publish`
+    id("maven-publish")
 
 }
 
