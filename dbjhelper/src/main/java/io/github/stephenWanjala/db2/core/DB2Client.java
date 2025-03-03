@@ -1,16 +1,19 @@
 package io.github.stephenWanjala.db2.core;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import io.github.stephenWanjala.db2.config.DataSourceConfig;
 import io.github.stephenWanjala.db2.core.executor.QueryExecutor;
 import io.github.stephenWanjala.db2.exception.DataAccessException;
 import io.github.stephenWanjala.db2.support.RowMapper;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
