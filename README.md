@@ -88,6 +88,10 @@ return "Transaction completed";
 
 ``````
 
+
+>Check In The [Sample](sample) module for Various Examples Usage With Db2
+
+
 ## Use Cases
 
 * Rapid development of DB2-backed Java applications
