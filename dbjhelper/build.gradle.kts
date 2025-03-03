@@ -6,6 +6,8 @@ java{
 plugins {
 //    `java-library`
     id("java")
+    `maven-publish`
+
 }
 
 group = "io.github.stephenWanjala"
