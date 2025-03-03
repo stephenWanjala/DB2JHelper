@@ -1,4 +1,4 @@
-package io.github.stephenWanjala.db2.support;
+package io.github.stephenWanjala.db2.util;
 
 import io.github.stephenWanjala.db2.core.DB2Client;
 

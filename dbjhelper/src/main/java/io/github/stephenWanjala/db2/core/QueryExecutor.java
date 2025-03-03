@@ -1,22 +1,22 @@
-package io.github.stephenWanjala.db2.core.executor;
+package io.github.stephenWanjala.db2.core;
 
 import io.github.stephenWanjala.db2.exception.DataAccessException;
-import io.github.stephenWanjala.db2.support.RowMapper;
-
-import javax.sql.DataSource;
+import io.github.stephenWanjala.db2.util.RowMapper;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import javax.sql.DataSource;
 
 /**
  * Core executor handling SQL operations with JDBC. Manages connections,
  * statement preparation, and result set processing.
  */
- public final class QueryExecutor {
+final class QueryExecutor {
     private final DataSource dataSource;
+    private final Connection connection;
 
     /**
      * Constructs a QueryExecutor with the given DataSource.
@@ -26,29 +26,39 @@ import java.util.Objects;
      */
     public QueryExecutor(DataSource dataSource) {
         this.dataSource = Objects.requireNonNull(dataSource, "DataSource must not be null");
+        this.connection = null;
     }
 
     /**
-     * Executes an update statement (INSERT, UPDATE, DELETE) with the given SQL and parameters.
+     * Constructs a QueryExecutor with the given Connection.
+     *
+     * @param connection the Connection to use for obtaining connections
+     * @throws NullPointerException if the connection is null
+     */
+    public QueryExecutor(Connection connection) {
+        this.connection = Objects.requireNonNull(connection, "Connection must not be null");
+        this.dataSource = null;
+    }
+
+    /**
+     * Executes an update statement (INSERT, UPDATE, DELETE) with the given SQL
+     * and parameters.
      *
      * @param sql    the SQL statement to execute
      * @param params the parameters to bind to the SQL statement
      * @return the number of rows affected
+     * @throws DataAccessException if the update fails
      */
     public int update(String sql, Object... params) {
-        return executeUpdate(sql, null, params);
-    }
-
-    /**
-     * Executes an update statement (INSERT, UPDATE, DELETE) with the given SQL, connection, and parameters.
-     *
-     * @param sql    the SQL statement to execute
-     * @param conn   the Connection to use for the update
-     * @param params the parameters to bind to the SQL statement
-     * @return the number of rows affected
-     */
-    public int update(String sql, Connection conn, Object... params) {
-        return executeUpdate(sql, conn, params);
+        Connection conn = null;
+        try {
+            conn = (connection != null) ? connection : dataSource.getConnection();
+            try (PreparedStatement pstmt = prepareStatement(conn, sql, params)) {
+                return pstmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Update failed: " + sanitizeSql(sql), e);
+        }
     }
 
     /**
@@ -57,74 +67,70 @@ import java.util.Objects;
      * @param sql        the SQL statement to execute
      * @param paramsList a list of parameter arrays to bind to the SQL statement
      * @return an array of update counts for each statement in the batch
+     * @throws DataAccessException if the batch update fails
      */
     public int[] batchUpdate(String sql, List<Object[]> paramsList) {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            for (Object[] params : paramsList) {
-                setParameters(pstmt, params);
-                pstmt.addBatch();
+        Connection conn = null;
+        try {
+            conn = (connection != null) ? connection : dataSource.getConnection();
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                for (Object[] params : paramsList) {
+                    setParameters(pstmt, params);
+                    pstmt.addBatch();
+                }
+                return pstmt.executeBatch();
             }
-            return pstmt.executeBatch();
         } catch (SQLException e) {
             throw new DataAccessException("Batch update failed: " + sanitizeSql(sql), e);
         }
     }
 
     /**
-     * Executes a query and maps the result set to a list of objects using the given RowMapper.
+     * Executes a query and maps the result set to a list of objects using the
+     * given RowMapper.
      *
      * @param sql    the SQL statement to execute
      * @param mapper the RowMapper to map the result set to objects
      * @param params the parameters to bind to the SQL statement
      * @param <T>    the type of objects in the result list
      * @return a list of mapped objects
+     * @throws DataAccessException if the query fails
      */
     public <T> List<T> query(String sql, RowMapper<T> mapper, Object... params) {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement pstmt = prepareStatement(conn, sql, params)) {
-
-            return executeQuery(pstmt, mapper);
+        Connection conn = null;
+        try {
+            conn = (connection != null) ? connection : dataSource.getConnection();
+            try (PreparedStatement pstmt = prepareStatement(conn, sql, params)) {
+                return executeQuery(pstmt, mapper);
+            }
         } catch (SQLException e) {
             throw new DataAccessException("Query failed: " + sanitizeSql(sql), e);
         }
     }
 
     /**
-     * Executes a query and converts the result set to a list of maps, where each map represents a row.
+     * Executes a query and converts the result set to a list of maps, where each
+     * map represents a row.
      *
      * @param sql    the SQL statement to execute
      * @param params the parameters to bind to the SQL statement
      * @return a list of maps representing the result set rows
+     * @throws DataAccessException if the query fails
      */
     public List<Map<String, Object>> queryForList(String sql, Object... params) {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement pstmt = prepareStatement(conn, sql, params)) {
-
-            return convertResultSet(pstmt.executeQuery());
+        Connection conn = null;
+        try {
+            conn = (connection != null) ? connection : dataSource.getConnection();
+            try (PreparedStatement pstmt = prepareStatement(conn, sql, params)) {
+                return convertResultSetToList(pstmt.executeQuery());
+            }
         } catch (SQLException e) {
             throw new DataAccessException("Query failed: " + sanitizeSql(sql), e);
         }
     }
 
-    private int executeUpdate(String sql, Connection existingConn, Object... params) {
-        boolean closeConnection = existingConn == null;
-        Connection conn = null;
-
-        try {
-            conn = existingConn != null ? existingConn : dataSource.getConnection();
-            try (PreparedStatement pstmt = prepareStatement(conn, sql, params)) {
-                return pstmt.executeUpdate();
-            }
-        } catch (SQLException e) {
-            throw new DataAccessException("Update failed: " + sanitizeSql(sql), e);
-        } finally {
-            closeConnectionSafely(conn, closeConnection);
-        }
-    }
-
-    private <T> List<T> executeQuery(PreparedStatement pstmt, RowMapper<T> mapper) throws SQLException {
+    private <T> List<T> executeQuery(PreparedStatement pstmt, RowMapper<T> mapper)
+            throws SQLException {
         try (ResultSet rs = pstmt.executeQuery()) {
             List<T> results = new ArrayList<>();
             while (rs.next()) {
@@ -134,13 +140,14 @@ import java.util.Objects;
         }
     }
 
-    private PreparedStatement prepareStatement(Connection conn, String sql, Object... params) throws SQLException {
+    private PreparedStatement prepareStatement(Connection conn, String sql, Object... params)
+            throws SQLException {
         PreparedStatement pstmt = conn.prepareStatement(sql);
         setParameters(pstmt, params);
         return pstmt;
     }
 
-    private List<Map<String, Object>> convertResultSet(ResultSet rs) throws SQLException {
+    private List<Map<String, Object>> convertResultSetToList(ResultSet rs) throws SQLException {
         List<Map<String, Object>> results = new ArrayList<>();
         ResultSetMetaData metaData = rs.getMetaData();
         int columnCount = metaData.getColumnCount();
@@ -158,20 +165,6 @@ import java.util.Objects;
     private void setParameters(PreparedStatement pstmt, Object... params) throws SQLException {
         for (int i = 0; i < params.length; i++) {
             pstmt.setObject(i + 1, params[i]);
-        }
-    }
-
-    private void closeConnectionSafely(Connection conn, boolean shouldClose) {
-        if (shouldClose && conn != null) {
-            try {
-                if (!conn.getAutoCommit()) {
-                    conn.rollback();
-                }
-                conn.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-                // Log warning
-            }
         }
     }
 
