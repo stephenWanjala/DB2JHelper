@@ -4,8 +4,8 @@ java{
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 plugins {
+//    `java-library`
     id("java")
-    `java-library`
 }
 
 group = "io.github.stephenWanjala"
@@ -18,6 +18,7 @@ repositories {
 dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    implementation("com.zaxxer:HikariCP:5.0.1")
 }
 
 tasks.test {
