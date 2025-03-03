@@ -1,0 +1,58 @@
+name: Build and Release JAR
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Get Version
+        id: get_version
+        run: |
+          VERSION=$("./gradlew" printVersion | grep "Project Version:" | awk '{print $3}')
+          echo "::set-output name=version::$VERSION"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+
+      - name: Upload JAR
+        id: upload-jar
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dbjhelper/build/libs/dbjhelper-${{ steps.get_version.outputs.version }}.jar
+          asset_name: dbjhelper-${{ steps.get_version.outputs.version }}.jar
+          asset_content_type: application/java-archive
