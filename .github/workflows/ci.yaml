@@ -15,9 +15,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -29,11 +30,15 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
 
+      - name: Debug - List JAR files
+        run: ls -R dbjhelper/build/libs || true
+
       - name: Get Version
         id: get_version
         run: |
-          VERSION=$("./gradlew" printVersion | grep "Project Version:" | awk '{print $3}')
-          echo "::set-output name=version::$VERSION"
+          VERSION=$(./gradlew properties | grep "version:" | awk '{print $2}')
+          echo "VERSION=$VERSION"
+          echo "version=$VERSION" >> $GITHUB_ENV
 
       - name: Create Release
         id: create_release
@@ -41,8 +46,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
-          tag_name: v${{ steps.get_version.outputs.version }}
-          release_name: Release v${{ steps.get_version.outputs.version }}
+          tag_name: v${{ env.version }}
+          release_name: Release v${{ env.version }}
           draft: false
           prerelease: false
 
@@ -53,6 +58,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dbjhelper/build/libs/dbjhelper-${{ steps.get_version.outputs.version }}.jar
-          asset_name: dbjhelper-${{ steps.get_version.outputs.version }}.jar
+          asset_path: dbjhelper/build/libs/dbjhelper-${{ env.version }}.jar
+          asset_name: dbjhelper-${{ env.version }}.jar
           asset_content_type: application/java-archive
