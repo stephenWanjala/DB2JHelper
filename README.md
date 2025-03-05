@@ -95,11 +95,7 @@ return "Transaction completed";
 ## Use Cases
 
 * Rapid development of DB2-backed Java applications
-* 
 * Migration from legacy JDBC code to modern patterns
-* 
 * Batch processing of financial/transactional data
-* 
 * Microservices requiring lightweight database access
-* 
 * Prototyping with quick SQL-to-POJO mapping
