@@ -1,9 +1,19 @@
-package io.github.stephenWanjala;
+package io.github.stephenwanjala.sample.model;
 
-public class Customer {
-    private String ledgerName;  private String ledgerNumber;
+/**
+ * Sample Supplier model class
+ */
+public class Supplier {
+    private String ledgerName;
+    private String ledgerNumber;
 
-    public Customer() {
+    // No-args constructor for mapping
+    public Supplier() {
+    }
+
+    public Supplier(String ledgerName, String ledgerNumber) {
+        this.ledgerName = ledgerName;
+        this.ledgerNumber = ledgerNumber;
     }
 
     public String getLedgerName() {
@@ -22,16 +32,11 @@ public class Customer {
         this.ledgerNumber = ledgerNumber;
     }
 
-    Customer(String ledgerName, String ledgerNumber) {
-        this.ledgerName = ledgerName;
-        this.ledgerNumber = ledgerNumber;
-    }
-
     @Override
     public String toString() {
-        return "Customer{" +
+        return "Supplier{" +
                 "ledgerName='" + ledgerName + '\'' +
                 ", ledgerNumber='" + ledgerNumber + '\'' +
                 '}';
     }
-}
+} 

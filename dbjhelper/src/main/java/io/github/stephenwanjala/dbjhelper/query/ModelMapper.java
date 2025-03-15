@@ -1,14 +1,17 @@
-package io.github.stephenWanjala.db2.util;
+package io.github.stephenwanjala.dbjhelper.query;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
 import java.util.Date;
-
-/** Utility class for populating Java models from SQL ResultSet. */
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map; /** Utility class for populating Java models from SQL ResultSet. */
 public final class ModelMapper {
 
     private ModelMapper() {
@@ -95,8 +98,8 @@ public final class ModelMapper {
         } else if (targetType == BigDecimal.class) {
             return value instanceof Number ? BigDecimal.valueOf(((Number) value).doubleValue()) : new BigDecimal(value.toString());
         } else if (targetType == Timestamp.class) {
-            return value instanceof Date ? new Timestamp(((Date) value).getTime()) : Timestamp.valueOf(value.toString());
-        } else if (targetType == Date.class) {
+            return value instanceof java.util.Date ? new Timestamp(((java.util.Date) value).getTime()) : Timestamp.valueOf(value.toString());
+        } else if (targetType == java.util.Date.class) {
             return parseDate(value.toString());
         }
 

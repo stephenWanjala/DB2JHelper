@@ -3,99 +3,148 @@
 ### **Simplified DB2 Database Operations for Java**
 _A lightweight, modern Java library for effortless DB2 database interactions_
 
-**Overview**
+## Overview
 
->I was kinda tired Of wring this Kinda of Code every time When I have To spin Up Any new Module For Fx Apps Using DB2 soo Yeah 
-> 
 DB2JHelper is a developer-friendly Java library designed to streamline DB2 database operations while maintaining performance and safety. It abstracts JDBC boilerplate and provides intuitive APIs for common database tasks, allowing developers to focus on business logic rather than database plumbing.
+
+## Installation
+
+### Gradle (Kotlin DSL)
+```kotlin
+repositories {
+    maven { url = uri("https://jitpack.io") }
+}
+
+dependencies {
+    implementation("io.github.stephenWanjala:DB2JHelper:1.0.0")
+}
+```
+
+### Maven
+```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
+<dependencies>
+    <dependency>
+        <groupId>io.github.stephenWanjala</groupId>
+        <artifactId>DB2JHelper</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+</dependencies>
+```
 
 ## Key Features
 
-### Feature Description
-
 | **Feature**              | **Description**                                                               |
 |--------------------------|-------------------------------------------------------------------------------|
-| **Fluent Query Builder** | Chainable API for SQL construction: `client.select().from().where().list()`   |
-| **Smart CRUD**           | Simplified insert/update/delete with automatic parameter binding              |
-| **POJO Mapping**         | Map query results to Java objects via lambda expressions                      |
-| **Batch Processing**     | Optimized bulk operations with JDBC batch support                             |
-| **Transaction Control**  | Declarative transactions with configurable isolation levels and auto-rollback |
-| **Connection Pooling**   | Built-in support for connection pooling (HikariCP-ready)                      |
-| **Runtime Safety**       | Automatic resource cleanup and unified exception handling                     |
-| **DB2-Specific**         | Optimized for DB2 SQL dialect and features                                    |
+| **Connection Pooling**   | Built-in HikariCP integration for efficient connection management              |
+| **Query Builder**        | Type-safe SQL query construction with parameter binding                        |
+| **Exception Handling**   | Unified exception hierarchy with meaningful error messages                     |
+| **Utility Functions**    | Helper methods for common DB2 operations                                       |
+| **Resource Management**  | Automatic cleanup of database resources                                        |
+| **Transaction Support**  | Simple transaction management with auto-rollback                               |
 
-### Why DB2JHelper?
+## Quick Start
 
-✅ Reduce Boilerplate - 80% less JDBC code compared to raw implementations  
-✅ Type-Safe Operations - Compile-time query validation through fluent API  
-✅ Modern Java - Leverages lambda expressions and functional programming  
-✅ Production Ready - Connection pooling, transaction recovery, and error logging  
-✅ Lightweight - Minimal dependencies (JDBC driver + optional HikariCP)
-#### Quick Start
-> Maven Deps Coming Soon ---
-
-[![](https://jitpack.io/v/stephenWanjala/DB2JHelper.svg)](https://jitpack.io/#stephenWanjala/DB2JHelper)
-
-### Basic Usage:
-````java
-
-
-// Configure
-DataSourceConfig config = new DataSourceConfig.Builder()
-.url("jdbc:db2://localhost:50000/SAMPLE")
-.user("db2admin")
-.password("securepass")
-.build();
-````
-### Basic Query:
+### 1. Basic Connection
 ```java
-
-List<Map<String, Object>> results = client
-        .query("SELECT * FROM users WHERE age > ?", 25);
+String jdbcUrl = DB2Utils.buildJdbcUrl("localhost", 50000, "SAMPLE");
+try (DB2Connection connection = new DB2Connection(jdbcUrl, "username", "password")) {
+    // Use the connection
+}
 ```
 
-### Query with fluent API
-````java
-try (DB2Client client = new DB2Client(datasource)) {
-List<Employee> employees = client
-        .select("id", "name", "salary")
-        .from("employees")
-        .where("department = ? AND salary > ?", "Engineering", 75000)
-        .map(rs -> new Employee(
-                rs.getInt("id"),
-                rs.getString("name"),
-                rs.getDouble("salary")
-        ));
-}
+### 2. Query Execution
+```java
+QueryExecutor executor = new QueryExecutor(connection);
 
-````
-**or**
-````java
-List<Map<String, Object>> employees = client.select("id", "name")
-    .from("employees")
-    .where("department = ?", "Engineering")
-    .orderBy("name DESC")
-    .list();
-````
+// Simple query
+List<Employee> employees = executor.executeQuery(
+    "SELECT * FROM employees WHERE department = ?",
+    rs -> new Employee(
+        rs.getInt("id"),
+        rs.getString("name"),
+        rs.getString("department"),
+        rs.getDouble("salary")
+    ),
+    "Engineering"
+);
+```
 
-### Transaction example
-`````java
-client.transaction(conn -> {
-client.update("UPDATE accounts SET balance = balance - ?", 1000);
-client.update("UPDATE payments SET status = 'PROCESSED'");
-return "Transaction completed";
-});
+### 3. Query Builder Usage
+```java
+QueryBuilder queryBuilder = new QueryBuilder("SELECT * FROM employees");
+queryBuilder.where("salary > ?", 50000.00)
+           .and("department = ?", "Engineering")
+           .orderBy("name");
 
-``````
+List<Employee> employees = executor.executeQuery(
+    queryBuilder.getQuery(),
+    rs -> new Employee(/* mapping */),
+    queryBuilder.getParameters().toArray()
+);
+```
 
+### 4. Batch Operations
+```java
+List<Object[]> batchParams = Arrays.asList(
+    new Object[]{"John Doe", "Engineering", 85000.00},
+    new Object[]{"Jane Smith", "Marketing", 75000.00}
+);
 
->Check In The [Sample](sample) module for Various Examples Usage With Db2
+int[] results = executor.executeBatch(
+    "INSERT INTO employees (name, department, salary) VALUES (?, ?, ?)",
+    batchParams
+);
+```
 
+### 5. Utility Functions
+```java
+// List all tables
+List<String> tables = DB2Utils.listTables(connection);
 
-## Use Cases
+// Check if table exists
+boolean exists = DB2Utils.tableExists(connection, "employees");
 
-* Rapid development of DB2-backed Java applications
-* Migration from legacy JDBC code to modern patterns
-* Batch processing of financial/transactional data
-* Microservices requiring lightweight database access
-* Prototyping with quick SQL-to-POJO mapping
+// Get column information
+List<String> columns = DB2Utils.listColumns(connection, "employees");
+```
+
+## Best Practices
+
+1. **Resource Management**
+   - Always use try-with-resources for connections
+   - Close resources explicitly when not using try-with-resources
+
+2. **Error Handling**
+   - Catch `DB2HelperException` for library-specific errors
+   - Use appropriate logging in catch blocks
+
+3. **Connection Pooling**
+   - Reuse DB2Connection instances
+   - Configure pool settings based on your application needs
+
+## Sample Application
+
+Check the [sample](sample) module for a complete working example demonstrating:
+- Connection setup
+- Table creation
+- Data insertion
+- Query execution
+- Result mapping
+- Utility function usage
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+[![](https://jitpack.io/v/stephenWanjala/DB2JHelper.svg)](https://jitpack.io/#stephenWanjala/DB2JHelper)
