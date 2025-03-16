@@ -14,18 +14,28 @@ allprojects {
 
 subprojects {
     apply(plugin = "java")
-    
+
     java {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    
+
     dependencies {
         testImplementation(platform("org.junit:junit-bom:5.10.0"))
         testImplementation("org.junit.jupiter:junit-jupiter")
     }
-    
+
     tasks.test {
         useJUnitPlatform()
+    }
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            username.set(System.getenv("OSSRH_USERNAME"))
+            password.set(System.getenv("OSSRH_PASSWORD"))
+            stagingProfileId.set("YOUR_STAGING_PROFILE_ID") // Replace with your staging profile ID
+        }
     }
 }
