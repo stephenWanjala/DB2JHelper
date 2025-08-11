@@ -1,17 +1,51 @@
 plugins {
-    `java-library`
-    id("maven-publish")
-    id("signing")
+    alias(libs.plugins.java.library)
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.vanniktech.mavenPublish)
 }
 
 group = "io.github.stephenWanjala"
-version = "1.0.0"
+version = "2.0.0"
 
+mavenPublishing {
+    publishToMavenCentral()
+
+    signAllPublications()
+
+    coordinates(group.toString(), "dbjhelper", version.toString())
+
+    pom {
+        name = "DB2JHelper"
+        description =
+            "Simplified DB2 Database Operations for Java A lightweight, modern Java library for effortless DB2 database interactions "
+        inceptionYear = "2025"
+        url = "https://github.com/stephenWanjala/DB2JHelper"
+        licenses {
+            license {
+                name = "The Apache License, Version 2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                distribution = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+            }
+        }
+        developers {
+            developer {
+                id = "dbjhelper"
+                name = "Wanjala Stephen"
+                url = "github.com/stephenWanjala/"
+            }
+        }
+        scm {
+            url = "  https://github.com/stephenWanjala/DB2JHelper"
+            connection = "scm:git:git:/github.com/stephenWanjala/DB2JHelper.git"
+            developerConnection = "scm:git:ssh://git@github.com//stephenWanjala/DB2JHelper.git"
+        }
+    }
+}
 dependencies {
-    api("com.zaxxer:HikariCP:5.0.1")
-    api("com.ibm.db2.jcc:db2jcc:db2jcc4")
+    api(libs.hikariCp)
+    api(libs.db2jcc4)
 
-    implementation("org.slf4j:slf4j-api:2.0.9")
+    implementation(libs.slf4j.api)
     implementation("com.google.code.findbugs:jsr305:3.0.2")
 
     testImplementation("org.mockito:mockito-core:5.8.0")
@@ -22,66 +56,6 @@ dependencies {
 java {
     withJavadocJar()
     withSourcesJar()
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = project.group.toString()
-            artifactId = "DB2JHelper"
-            version = project.version.toString()
-
-            from(components["java"])
-
-            pom {
-                name.set("DB2JHelper")
-                description.set("A developer-friendly Java library for DB2 database operations")
-                url.set("https://github.com/stephenWanjala/DB2JHelper")
-
-                licenses {
-                    license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                        distribution.set("repo")
-                    }
-                }
-
-                developers {
-                    developer {
-                        id.set("stephenWanjala")
-                        name.set("Stephen Wanjala")
-                        email.set("stephenwanjala145@gmail.com")
-                    }
-                }
-
-                scm {
-                    connection.set("scm:git:git://github.com/stephenWanjala/DB2JHelper.git")
-                    developerConnection.set(
-                        "scm:git:ssh://github.com:stephenWanjala/DB2JHelper.git"
-                    )
-                    url.set("https://github.com/stephenWanjala/DB2JHelper")
-                }
-            }
-        }
-    }
-    repositories {
-        maven {
-            name = "OSSRH"
-            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-            credentials {
-                username = System.getenv("OSSRH_USERNAME")
-                password = System.getenv("OSSRH_PASSWORD")
-            }
-        }
-    }
-}
-
-signing {
-    useInMemoryPgpKeys(
-        System.getenv("ORG_GRADLE_PROJECT_signingKey"),
-        System.getenv("ORG_GRADLE_PROJECT_signingPassword")
-    )
-    sign(publishing.publications["maven"])
 }
 
 tasks.javadoc {
