@@ -1,0 +1,20 @@
+[versions]
+kotlin = "2.2.0"
+coroutinesVersion = "1.10.1"
+hikariCP ="5.0.1"
+slf4j="2.0.9"
+findBugs ="3.0.2"
+
+[libraries]
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutinesVersion" }
+hikariCp= {module ="com.zaxxer:HikariCP",version.ref="hikariCP"}
+slf4j-api= {module ="org.slf4j:slf4j-api",version.ref="slf4j"}
+findBugs = { module = "com.google.code.findbugs:jsr305", version.ref = "findBugs" }
+db2jcc4 = { module = "com.ibm.db2.jcc:db2jcc", version = "db2jcc4" }
+
+
+[plugins]
+vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.34.0" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+java-library = { id = "java-library" }

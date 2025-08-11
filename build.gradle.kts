@@ -1,10 +1,11 @@
 plugins {
     id("java")
-    id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
+    alias(libs.plugins.vanniktech.mavenPublish) apply false
+    alias(libs.plugins.kotlin.jvm) apply false
 }
 
 group = "io.github.stephenWanjala"
-version = "1.0.0"
+version = "2.0.0"
 
 allprojects {
     repositories {
@@ -30,12 +31,3 @@ subprojects {
     }
 }
 
-nexusPublishing {
-    repositories {
-        sonatype {
-            username.set(System.getenv("OSSRH_USERNAME"))
-            password.set(System.getenv("OSSRH_PASSWORD"))
-            stagingProfileId.set("YOUR_STAGING_PROFILE_ID") // Replace with your staging profile ID
-        }
-    }
-}

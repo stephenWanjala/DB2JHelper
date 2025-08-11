@@ -10,6 +10,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/dbjhelper" />
+            <option value="$PROJECT_DIR$/dbjhelper-ktx" />
             <option value="$PROJECT_DIR$/sample" />
           </set>
         </option>

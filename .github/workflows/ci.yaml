@@ -1,63 +1,25 @@
-name: Build and Release JAR
 
+name: Publish
 on:
-  push:
-    branches:
-      - main
-      - master
-  pull_request:
-    branches:
-      - main
-      - master
-
+  release:
+    types: [released, prereleased]
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
+  publish:
+    name: Release build and publish
+    runs-on: macOS-latest
     steps:
-      - name: Checkout Repository
+      - name: Check out code
         uses: actions/checkout@v4
-
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Build with Gradle
-        run: ./gradlew build
-
-      - name: Debug - List JAR files
-        run: ls -R dbjhelper/build/libs || true
-
-      - name: Get Version
-        id: get_version
-        run: |
-          VERSION=$(./gradlew properties | grep "version:" | awk '{print $2}')
-          echo "VERSION=$VERSION"
-          echo "version=$VERSION" >> $GITHUB_ENV
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+          distribution: 'zulu'
+          java-version: 21
+      - name: Publish to MavenCentral
+        run: ./gradlew publishToMavenCentral --no-configuration-cache
         env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
-        with:
-          tag_name: v${{ env.version }}
-          release_name: Release v${{ env.version }}
-          draft: false
-          prerelease: false
-
-      - name: Upload JAR
-        id: upload-jar
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dbjhelper/build/libs/dbjhelper-${{ env.version }}.jar
-          asset_name: dbjhelper-${{ env.version }}.jar
-          asset_content_type: application/java-archive
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_KEY_CONTENTS }}
