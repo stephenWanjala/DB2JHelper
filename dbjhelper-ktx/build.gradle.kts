@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.vanniktech.mavenPublish)
 }
 
-group = "io.github.stephenWanjala"
+group = "io.github.stephenwanjala"
 version = "2.0.0"
 mavenPublishing {
     publishToMavenCentral()
