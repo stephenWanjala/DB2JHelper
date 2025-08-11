@@ -1,4 +1,4 @@
-# DB2JHelper
+# DB2JHelper ![Maven Central Version](https://img.shields.io/maven-central/v/io.github.stephenwanjala/dbjhelper)
 
 ### **Simplified DB2 Database Operations for Java**
 _A lightweight, modern Java library for effortless DB2 database interactions_
@@ -9,136 +9,229 @@ DB2JHelper is a developer-friendly Java library designed to streamline DB2 datab
 
 ## Installation
 
-### Gradle (Kotlin DSL)
+## Major Breaking Changes
+
+### 1. Client Initialization
+**Before (1.x):**
+```java
+DB2Client client = new DB2Client(dataSource);
+```
+**Now (2.0.0):**
+```java
+DB2Connection connection = new DB2Connection(jdbcUrl, properties);
+QueryExecutor executor = new QueryExecutor(connection.getConnection());
+```
+
+### 2. Query Building
+**Before (1.x):**
+```java
+client.select("LEDGER_NAME", "LEDGER_NUMBER")
+      .from("CUSTOMERS")
+      .list();
+```
+**Now (2.0.0):**
+```java
+executor.executeQuery(
+    QueryBuilder.select("LEDGER_NAME", "LEDGER_NUMBER")
+              .from("CUSTOMERS")
+              .getQuery(),
+    resultSetMapper
+);
+```
+
+### 3. Direct Query Execution
+**Before (1.x):**
+```java
+List<Map<String, Object>> results = client.query(sql);
+```
+**Now (2.0.0):**
+```java
+List<Map<String, Object>> results = executor.query(sql);
+```
+
+### 4. Object Mapping
+**Before (1.x):**
+```java
+Customer customer = client.queryForObject(sql, Customer.class, "HESA");
+```
+**Now (2.0.0):**
+```java
+// Option 1: Using queryForObject with class (requires no-args constructor and setters)
+Customer customer = executor.queryForObject(sql, Customer.class, "HESA");
+
+// Option 2: Using explicit mapping
+Customer customer = executor.executeQuery(sql, 
+    rs -> new Customer(rs.getString("LEDGER_NAME"), rs.getString("LEDGER_NUMBER")), 
+    "HESA"
+).get(0);
+```
+
+### 5. Transaction Handling
+**Before (1.x):**
+```java
+client.transaction(conn -> {
+    client.update("UPDATE accounts SET balance = balance - ?", 1000);
+    client.update("UPDATE payments SET status = 'PROCESSED'");
+    return "Transaction completed";
+});
+```
+**Now (2.0.0):**
+```java
+executor.transaction(tx -> {
+    tx.executeUpdate("UPDATE accounts SET balance = balance - ?", 1000);
+    tx.executeUpdate("UPDATE payments SET status = 'PROCESSED'");
+    return "Transaction completed";
+});
+```
+
+### 6. Resource Management
+**Before (1.x):**
+- Automatic resource management handled by DB2Client
+
+**Now (2.0.0):**
+- Must explicitly use try-with-resources for both DB2Connection and QueryExecutor
+```java
+try (DB2Connection connection = new DB2Connection(jdbcUrl, properties);
+     QueryExecutor executor = new QueryExecutor(connection.getConnection())) {
+    // Use executor
+}
+```
+
+### 7. Configuration
+**Before (1.x):**
+```java
+HikariConfig config = new HikariConfig();
+config.setJdbcUrl(URL);
+// ... other config
+dataSource = new HikariDataSource(config);
+```
+**Now (2.0.0):**
+```java
+Properties properties = new Properties();
+properties.setProperty("user", username);
+// ... other properties
+DB2Connection connection = new DB2Connection(jdbcUrl, properties);
+```
+
+## Migration Guide
+
+### Step 1: Update Dependencies
+Update your dependency to the new version:
+
 ```kotlin
-repositories {
-    maven { url = uri("https://jitpack.io") }
-}
+// Gradle (Kotlin DSL)
+implementation("io.github.stephenWanjala:dbjhelper:2.0.0")
 
-dependencies {
-    implementation("io.github.stephenWanjala:DB2JHelper:1.0.0")
-}
+```
+```kotlin
+//Extensions for Kotlin
+implementation("io.github.stephenWanjala:dbjhelper-ktx:2.0.0")
 ```
 
-### Maven
+### For Kotlin Projects there is Extensions for The Kotlin Api see 👉🏻 [dbjhelper-ktx](dbjhelper-ktx/README.md) 
+
 ```xml
-<repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
-</repositories>
-
-<dependencies>
-    <dependency>
-        <groupId>io.github.stephenWanjala</groupId>
-        <artifactId>DB2JHelper</artifactId>
-        <version>1.0.0</version>
-    </dependency>
-</dependencies>
+<!-- Maven -->
+<dependency>
+    <groupId>io.github.stephenWanjala</groupId>
+    <artifactId>dbjhelper</artifactId>
+    <version>2.0.0</version>
+</dependency>
 ```
 
-## Key Features
 
-| **Feature**              | **Description**                                                               |
-|--------------------------|-------------------------------------------------------------------------------|
-| **Connection Pooling**   | Built-in HikariCP integration for efficient connection management              |
-| **Query Builder**        | Type-safe SQL query construction with parameter binding                        |
-| **Exception Handling**   | Unified exception hierarchy with meaningful error messages                     |
-| **Utility Functions**    | Helper methods for common DB2 operations                                       |
-| **Resource Management**  | Automatic cleanup of database resources                                        |
-| **Transaction Support**  | Simple transaction management with auto-rollback                               |
+### Step 2: Update Your Code
 
-## Quick Start
+1. Replace DB2Client Usage:
+   - Remove all direct DB2Client usage
+   - Introduce DB2Connection and QueryExecutor
+   - Update resource management with try-with-resources
 
-### 1. Basic Connection
+2. Update Query Building:
+   - Use QueryBuilder static methods
+   - Add explicit result mapping
+   - Update transaction blocks
+
+3. Update Object Mapping:
+   - Either add no-args constructors and setters for automatic mapping
+   - Or implement explicit ResultSet mapping functions
+
+### Step 3: Error Handling
+Update your error handling as exceptions are now wrapped in `DB2HelperException`:
+
 ```java
-String jdbcUrl = DB2Utils.buildJdbcUrl("localhost", 50000, "SAMPLE");
-try (DB2Connection connection = new DB2Connection(jdbcUrl, "username", "password")) {
-    // Use the connection
+try {
+    // DB2JHelper operations
+} catch (DB2HelperException e) {
+    // Handle database errors
+    logger.error("Database error: " + e.getMessage(), e);
 }
 ```
 
-### 2. Query Execution
-```java
-QueryExecutor executor = new QueryExecutor(connection);
+## Benefits of the New API
 
-// Simple query
-List<Employee> employees = executor.executeQuery(
-    "SELECT * FROM employees WHERE department = ?",
-    rs -> new Employee(
-        rs.getInt("id"),
-        rs.getString("name"),
-        rs.getString("department"),
-        rs.getDouble("salary")
-    ),
-    "Engineering"
-);
+1. **Better Separation of Concerns**
+   - Clear distinction between connection management and query execution
+   - More modular and maintainable code
+
+2. **Enhanced Type Safety**
+   - Improved compile-time checking
+   - More explicit error handling
+
+3. **More Flexible Object Mapping**
+   - Support for both automatic and manual mapping
+   - Better control over object creation
+
+4. **Improved Resource Management**
+   - Explicit resource handling
+   - Better connection lifecycle management
+
+5. **Enhanced Query Building**
+   - More intuitive query construction
+   - Better support for complex queries
+
+6. **Better Transaction Control**
+   - More explicit transaction boundaries
+   - Improved error handling in transactions
+
+## Example Migration
+
+### Before (1.x):
+```java
+DB2Client client = new DB2Client(dataSource);
+List<Customer> customers = client
+    .select("LEDGER_NAME", "LEDGER_NUMBER")
+    .from("CUSTOMERS")
+    .where("LEDGER_NUMBER = ?", "HESA")
+    .list();
 ```
 
-### 3. Query Builder Usage
+### After (2.0.0):
 ```java
-QueryBuilder queryBuilder = new QueryBuilder("SELECT * FROM employees");
-queryBuilder.where("salary > ?", 50000.00)
-           .and("department = ?", "Engineering")
-           .orderBy("name");
-
-List<Employee> employees = executor.executeQuery(
-    queryBuilder.getQuery(),
-    rs -> new Employee(/* mapping */),
-    queryBuilder.getParameters().toArray()
-);
+try (DB2Connection connection = new DB2Connection(jdbcUrl, properties);
+     QueryExecutor executor = new QueryExecutor(connection.getConnection())) {
+    
+    List<Customer> customers = executor.executeQuery(
+        QueryBuilder.select("LEDGER_NAME", "LEDGER_NUMBER")
+                  .from("CUSTOMERS")
+                  .where("LEDGER_NUMBER = ?", "HESA")
+                  .getQuery(),
+        rs -> new Customer(
+            rs.getString("LEDGER_NAME"),
+            rs.getString("LEDGER_NUMBER")
+        ),
+        "HESA"
+    );
+}
 ```
 
-### 4. Batch Operations
-```java
-List<Object[]> batchParams = Arrays.asList(
-    new Object[]{"John Doe", "Engineering", 85000.00},
-    new Object[]{"Jane Smith", "Marketing", 75000.00}
-);
+## Need Help?
 
-int[] results = executor.executeBatch(
-    "INSERT INTO employees (name, department, salary) VALUES (?, ?, ?)",
-    batchParams
-);
-```
-
-### 5. Utility Functions
-```java
-// List all tables
-List<String> tables = DB2Utils.listTables(connection);
-
-// Check if table exists
-boolean exists = DB2Utils.tableExists(connection, "employees");
-
-// Get column information
-List<String> columns = DB2Utils.listColumns(connection, "employees");
-```
-
-## Best Practices
-
-1. **Resource Management**
-   - Always use try-with-resources for connections
-   - Close resources explicitly when not using try-with-resources
-
-2. **Error Handling**
-   - Catch `DB2HelperException` for library-specific errors
-   - Use appropriate logging in catch blocks
-
-3. **Connection Pooling**
-   - Reuse DB2Connection instances
-   - Configure pool settings based on your application needs
-
-## Sample Application
-
-Check the [sample](sample) module for a complete working example demonstrating:
-- Connection setup
-- Table creation
-- Data insertion
-- Query execution
-- Result mapping
-- Utility function usage
-
+If you encounter any issues during migration:
+1. Check the [sample module](sample) for comprehensive examples
+2. Open an issue on GitHub
+3. Refer to the updated documentation
+4. Contact the maintainers
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -146,5 +239,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-[![](https://jitpack.io/v/stephenWanjala/DB2JHelper.svg)](https://jitpack.io/#stephenWanjala/DB2JHelper)

@@ -1,4 +1,4 @@
-# **dbjhelper-ktx**
+# **dbjhelper-ktx** ![Maven Central Version](https://img.shields.io/maven-central/v/io.github.stephenwanjala/dbjhelper)
 Kotlin extensions and coroutine support for `dbjhelper`, simplifying database access with idiomatic Kotlin.
 
 ---
