@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     `java-library`
     kotlin("jvm") version "2.2.0"
@@ -57,5 +59,8 @@ tasks.test {
     useJUnitPlatform()
 }
 kotlin {
-    jvmToolchain(21)
+    compilerOptions {
+        jvmTarget = JvmTarget.fromTarget("1.8")
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
+    }
 }
